@@ -6,8 +6,8 @@ const w = (c.width = 300);
 const h = (c.height = 300);
 
 const bounds = c.getBoundingClientRect();
-let mx = w / 2;
-let my = h / 2;
+let mx = -200;
+let my = -200;
 
 // PARTICLE VARS
 const STRENGTH = 450;
