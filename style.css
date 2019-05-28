@@ -1,6 +1,6 @@
 canvas {
-  width: 90vh;
-  height: 90vh;
+  width: 500px;
+  height: 500px;
   box-sizing: border-box;
   image-rendering: pixelated;
 }
