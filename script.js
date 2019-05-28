@@ -1,10 +1,9 @@
 //should clean this
-const imgSrc =
-  "https://s3-us-west-2.amazonaws.com/s.cdpn.io/218538/nat-image.jpg";
+const imgSrc = "nataliya.jpg";
 const c = document.getElementById("world");
 const ctx = c.getContext("2d");
 const w = (c.width = 300);
-const h = (c.height = 200);
+const h = (c.height = 300);
 
 const bounds = c.getBoundingClientRect();
 let mx = w / 2;
