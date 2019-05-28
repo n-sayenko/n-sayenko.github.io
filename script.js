@@ -2,8 +2,8 @@
 const imgSrc = "nataliya.jpg";
 const c = document.getElementById("world");
 const ctx = c.getContext("2d");
-const w = (c.width = 300);
-const h = (c.height = 300);
+const w = (c.width = 220);
+const h = (c.height = 220);
 
 const bounds = c.getBoundingClientRect();
 let mx = -200;
