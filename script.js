@@ -10,7 +10,8 @@ let mx = -200;
 let my = -200;
 
 // PARTICLE VARS
-const STRENGTH = 450;
+var strength = 450;
+var blackAndWhite = true;
 const particle = {
   x: 0,
   y: 0,
@@ -21,7 +22,10 @@ const particle = {
   b: 255
 };
 
-const list = [];
+
+let animate = null;
+
+var list = [];
 
 Number.prototype.map = function(in_min, in_max, out_min, out_max) {
   return ((this - in_min) * (out_max - out_min)) / (in_max - in_min) + out_min;
@@ -46,14 +50,25 @@ c.addEventListener("touchmove", function(e) {
   my = my.map(0, c.offsetHeight, 0, h);
 });
 
-let img = new Image();
-img.crossOrigin = "anonymous";
-img.onload = function() {
-  ctx.drawImage(img, 0, 0, w, h);
-  pixelate(img);
-  step();
-};
-img.src = imgSrc;
+const start = ()=>{
+  let img = new Image();
+  img.crossOrigin = "anonymous";
+  img.onload = function() {
+    ctx.clearRect(0,0,w,h)
+    ctx.drawImage(img, 0, 0, w, h);
+    pixelate(img);
+
+    if(animate === null){
+      step();
+
+    }
+  };
+  img.src = imgSrc;
+}
+
+
+
+
 
 const getIndex = (y, x, data) => {
   return y * 4 * data.width + x * 4;
@@ -88,71 +103,126 @@ const pixelate = img => {
 
   ctx.clearRect(0, 0, w, h);
 
-  for (var y = 0, y2 = imageData.height - 1; y < y2; y++) {
-    for (var x = 1, x2 = imageData.width - 1; x < x2; x++) {
+  if(!blackAndWhite){
+  
+  for (var y = 0, y2 = imageData.height; y < y2; y++) {
+    for (var x = 0, x2 = imageData.width; x < x2; x++) {
       const index = getIndex(y, x, imageData);
-      let r = imageData.data[index];
-      let g = imageData.data[index + 1];
-      let b = imageData.data[index + 2];
-
-      const c = parseInt((r + g + b) / 3 > 128 ? 255 : 0);
-
-      imageData.data[index] = c;
-      imageData.data[index + 1] = c;
-      imageData.data[index + 2] = c;
-
-      const oldColor = {
-        r: r,
-        g: g,
-        b: b
-      };
-      const newColor = {
-        r: c,
-        g: c,
-        b: c
-      };
-
-      const qe = calculateQuantError(oldColor, newColor);
-
-      distributeError(imageData, x, y, qe.r, qe.g, qe.b);
-
-      p = Object.create(particle);
-      p.x = p.ox = x;
-      p.y = p.oy = y;
-      p.r = imageData.data[index];
-      p.g = imageData.data[index + 1];
-      p.b = imageData.data[index + 2];
-      list.push(p);
+    
+    p = Object.create( particle );
+    p.x = p.ox = x;
+    p.y = p.oy = y;
+    p.r = imageData.data[index];
+    p.g = imageData.data[index+1];
+    p.b = imageData.data[index+2];
+    
+    list.push(p);
+    
     }
   }
+  } else {
+    for (var y = 0, y2 = imageData.height - 1; y < y2; y++) {
+      for (var x = 1, x2 = imageData.width - 1; x < x2; x++) {
+        const index = getIndex(y, x, imageData);
+        let r = imageData.data[index];
+        let g = imageData.data[index + 1];
+        let b = imageData.data[index + 2];
+
+       
+  
+        const c = parseInt((r + g + b) / 3 > 128 ?255 : 0);
+  
+        imageData.data[index] = c;
+        imageData.data[index + 1] = c;
+        imageData.data[index + 2] =  c;
+
+        const oldColor = {
+          r: r,
+          g: g,
+          b: b
+        };
+        const newColor = {
+          r:  c,
+          g:  c,
+          b: c
+        };
+
+        const qe = calculateQuantError(oldColor, newColor);
+  
+        distributeError(imageData, x, y, qe.r, qe.g, qe.b);
+  
+        p = Object.create(particle);
+        p.x = p.ox = x;
+        p.y = p.oy = y;
+        p.r = imageData.data[index];
+        p.g = imageData.data[index + 1];
+        p.b = imageData.data[index + 2];
+        list.push(p);
+      }
+    }
+
+  }
+
+  
   ctx.putImageData(imageData, 0, 0);
-  step();
 };
 
 function step() {
+  
   for (i = 0; i < list.length; i++) {
     p = list[i];
 
     dx = p.x - mx;
     dy = p.y - my;
     angle = Math.atan2(dy, dx);
-    dist = STRENGTH / Math.sqrt(dx * dx + dy * dy);
+    dist = strength  / Math.sqrt(dx * dx + dy * dy);
     p.x += Math.cos(angle) * dist;
     p.y += Math.sin(angle) * dist;
     p.x += (p.ox - p.x) * 0.1;
     p.y += (p.oy - p.y) * 0.1;
   }
 
-  b = (a = ctx.createImageData(w, h)).data;
-  for (i = 0; i < list.length; i++) {
-    p = list[i];
-    b[(n = (~~p.x + ~~p.y * w) * 4)];
-    b[n] = p.r;
-    b[n + 1] = p.g;
-    b[n + 2] = p.b;
-    b[n + 3] = 255;
-  }
-  ctx.putImageData(a, 0, 0);
+  if(blackAndWhite){
+    b = (a = ctx.createImageData(w, h)).data;
+    for (i = 0; i < list.length; i++) {
+      p = list[i];
+      b[(n = (~~p.x + ~~p.y * w) * 4)];
+      b[n] = p.r;
+      b[n + 1] = p.g;
+      b[n + 2] = p.b;
+      b[n + 3] = 255;
+    }
+    ctx.putImageData(a, 0, 0);
 
-  requestAnimationFrame(step);
+  } else {
+    ctx.clearRect(0,0,w,h)
+    const newImage = ctx.createImageData( w, h );
+    const newimageData = newImage.data;
+  
+      for ( i = 0; i < list.length; i++ ) {
+  
+        p = list[i];
+        newimageData[n = ( ~~p.x + ( ~~p.y * w ) ) * 4];
+        newimageData[n] = p.r; 
+        newimageData[n+1] =p.g;
+        newimageData[n+2] =p.b;
+        newimageData[n+3] =255;
+        
+      }
+  
+      ctx.putImageData( newImage, 0, 0 );
+  }
+
+  animate = requestAnimationFrame(step);
 }
+
+start();
+
+var gui = new dat.GUI();
+gui.add(this, 'strength').min(0).max(850).step(1).listen();
+gui.add(this, 'blackAndWhite').onChange(()=>{
+  start();
+});
+
+
+ 
