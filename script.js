@@ -218,11 +218,5 @@ function step() {
 
 start();
 
-var gui = new dat.GUI();
-gui.add(this, 'strength').min(0).max(850).step(1).listen();
-gui.add(this, 'blackAndWhite').onChange(()=>{
-  start();
-});
-
 
  
