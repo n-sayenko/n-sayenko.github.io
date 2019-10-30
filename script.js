@@ -37,10 +37,14 @@ c.addEventListener("mouseout", function(e) {
 });
 
 c.addEventListener("mousemove", function(e) {
-  mx = e.clientX - bounds.left;
-  my = e.clientY - bounds.top;
+  console.log(e)
+  mx = e.offsetX ;
+  my = e.offsetY;
   mx = mx.map(0, c.offsetWidth, 0, w);
   my = my.map(0, c.offsetHeight, 0, h);
+
+
+
 });
 
 c.addEventListener("touchmove", function(e) {
