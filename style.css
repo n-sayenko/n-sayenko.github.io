@@ -1,6 +1,4 @@
-
-
-html{
+html {
   background-color: #fefefe;
 }
 
@@ -18,7 +16,7 @@ body {
   max-width: 800px;
   padding: 1em;
   line-height: 1.7;
-  font-family: 'B612 Mono', monospace;
+  font-family: "B612 Mono", monospace;
 }
 
 h1 {
@@ -37,9 +35,8 @@ canvas {
 }
 
 .description {
-  padding-bottom:1em;
+  padding-bottom: 2em;
 }
-
 
 @media only screen and (max-width: 550px) {
   canvas {
