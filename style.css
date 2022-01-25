@@ -19,13 +19,6 @@ body {
   font-family: "B612 Mono", monospace;
 }
 
-h1 {
-  font-size: 2em;
-}
-
-a {
-  color: #07a;
-}
 
 canvas {
   width: 500px;
