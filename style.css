@@ -9,28 +9,10 @@ body {
   height: 100%;
 }
 
-body {
-  color: #050505;
-  font-size: 18px;
-  margin: 0px auto;
-  max-width: 800px;
-  padding: 1em;
-  line-height: 1.7;
-  font-family: "B612 Mono", monospace;
-}
-
 
 canvas {
   width: 500px;
   height: 500px;
   box-sizing: border-box;
   image-rendering: pixelated;
-}
-
-
-@media only screen and (max-width: 550px) {
-  canvas {
-    width: 320px;
-    height: 320px;
-  }
 }
