@@ -16,3 +16,10 @@ canvas {
   box-sizing: border-box;
   image-rendering: pixelated;
 }
+
+
+section {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
