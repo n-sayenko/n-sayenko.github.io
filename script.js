@@ -1,5 +1,5 @@
 //should clean this
-const imgSrc = "nataliya.jpg";
+const imgSrc = "nataliya2.jpg";
 const c = document.getElementById("world");
 const ctx = c.getContext("2d");
 const w = (c.width = 220);
