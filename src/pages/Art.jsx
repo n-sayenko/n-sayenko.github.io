@@ -61,8 +61,14 @@ export default function Art() {
       if (cancelled) return;
       const list = (Array.isArray(manifest) ? manifest : []).map((entry) => ({
         ...entry,
-        // a hand-written caption always wins over the generated one
-        description: captions[entry.file] ?? entry.description ?? "",
+        // A hand-written caption always wins over the filename-derived one.
+        // Keyed by filename or by the content id, which survives a rename
+        // in Drive where the filename doesn't.
+        // `||` not `??` on purpose: captions.json ships pre-filled with empty
+        // strings, and a blank entry should mean "not written yet" rather than
+        // blanking out the filename-derived one.
+        description:
+          captions[entry.file] || captions[entry.id] || entry.description || "",
       }));
       setItems(list);
     });

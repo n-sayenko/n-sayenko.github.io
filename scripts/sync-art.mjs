@@ -274,10 +274,16 @@ function describe(name) {
   return base.replace(/_+/g, " ").replace(/\s+/g, " ").trim();
 }
 
+/**
+ * Short hash of the file's contents. Survives renaming in Drive, which the
+ * filename does not — so it's what captions.json can safely be keyed on.
+ */
+const contentHash = (file) =>
+  (file.md5Checksum ?? file.id).replace(/[^a-z0-9]/gi, "").slice(0, 8);
+
 /** Stable repo filename: readable slug + a hash so same-named files coexist. */
 function targetName(file) {
-  const hash = (file.md5Checksum ?? file.id).replace(/[^a-z0-9]/gi, "").slice(0, 8);
-  return `${slugify(file.name.replace(/\.[^.]+$/, ""))}-${hash}.jpg`;
+  return `${slugify(file.name.replace(/\.[^.]+$/, ""))}-${contentHash(file)}.jpg`;
 }
 
 /** When the photo was taken beats when it was uploaded, for a feed. */
@@ -399,6 +405,7 @@ async function main() {
     const { w, h } = await dimensions(target);
     manifest.push({
       file: name,
+      id: contentHash(file),
       w,
       h,
       date: takenAt(file),
