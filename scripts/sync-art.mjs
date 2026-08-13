@@ -21,7 +21,14 @@
 
 import { execFile } from "node:child_process";
 import { createSign } from "node:crypto";
-import { mkdir, readdir, readFile, rm, writeFile } from "node:fs/promises";
+import {
+  appendFile,
+  mkdir,
+  readdir,
+  readFile,
+  rm,
+  writeFile,
+} from "node:fs/promises";
 import { existsSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
@@ -429,6 +436,29 @@ async function main() {
     console.log(`\n${skipped.length} file(s) could not be decoded:`);
     for (const name of skipped) console.log(`  - ${name}`);
     console.log("re-save them as JPEG in Drive and they'll sync next run.");
+  }
+
+  // Also surface it on the run's summary page — Actions logs are virtualised
+  // and awkward to read, and a skipped photo is exactly the thing you want to
+  // notice without going digging.
+  if (process.env.GITHUB_STEP_SUMMARY) {
+    const lines = [
+      "### Art sync",
+      "",
+      `**${toAdd.length - skipped.length}** added · **${toDelete.length}** ` +
+        `removed · **${manifest.length}** in the gallery`,
+    ];
+    if (skipped.length > 0) {
+      lines.push(
+        "",
+        `#### ${skipped.length} file(s) could not be decoded`,
+        "",
+        ...skipped.map((name) => `- \`${name}\``),
+        "",
+        "Re-save these as JPEG in Drive and they'll sync on the next run.",
+      );
+    }
+    await appendFile(process.env.GITHUB_STEP_SUMMARY, `${lines.join("\n")}\n`);
   }
 }
 
