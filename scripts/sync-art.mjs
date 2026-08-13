@@ -202,6 +202,44 @@ async function toJpeg(source, destination, maxEdge) {
   );
 }
 
+/**
+ * Decode a HEIC to something ImageMagick will definitely resize.
+ *
+ * Two decoders, because they fail on different files: heif-convert handles
+ * most iPhone photos, but chokes on portrait-mode shots whose depth-map item
+ * is referenced but absent ("Non-existing depth image referenced"). ImageMagick
+ * reads only the primary image, so it sails past exactly those.
+ */
+async function decodeHeif(raw, scratch, label) {
+  const png = path.join(scratch, "raw.png");
+
+  try {
+    await execFileAsync("heif-convert", [raw, png], {
+      maxBuffer: 64 * 1024 * 1024,
+    });
+    if (existsSync(png)) return png;
+
+    // a HEIC holding several top-level images makes heif-convert write
+    // raw-1.png, raw-2.png … instead of the path it was given
+    const produced = (await readdir(scratch))
+      .filter((f) => /^raw-\d+\.png$/.test(f))
+      .sort();
+    if (produced.length > 0) return path.join(scratch, produced[0]);
+  } catch (error) {
+    console.log(`  heif-convert failed on ${label}, trying imagemagick`);
+  }
+
+  const fallback = path.join(scratch, "fallback.png");
+  const cmd = await resolveMagick();
+  await execFileAsync(cmd, [`${raw}[0]`, fallback], {
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  if (!existsSync(fallback)) {
+    throw new Error(`could not decode ${label} with either decoder`);
+  }
+  return fallback;
+}
+
 async function dimensions(file) {
   const cmd = await resolveMagick();
   const { stdout } = await execFileAsync(
@@ -300,42 +338,37 @@ async function main() {
   const scratch = path.join(tmpdir(), `art-sync-${process.pid}`);
   await mkdir(scratch, { recursive: true });
 
+  const skipped = [];
+
   try {
     for (const name of toAdd) {
       const file = wanted.get(name);
       const ext = path.extname(file.name).toLowerCase();
-      console.log(`+ ${file.name} -> ${name}`);
-
-      const raw = path.join(scratch, `raw${ext || ".bin"}`);
-      await download(token, file.id, raw);
-
-      // Browsers cannot render HEIC at all, so this conversion is mandatory,
-      // not an optimisation.
-      let source = raw;
-      if (
+      const isHeif =
         NEEDS_HEIF.has(ext) ||
         file.mimeType === "image/heic" ||
-        file.mimeType === "image/heif"
-      ) {
-        source = path.join(scratch, "raw.png");
-        await execFileAsync("heif-convert", [raw, source], {
-          maxBuffer: 64 * 1024 * 1024,
-        });
-        if (!existsSync(source)) {
-          // a HEIC holding several top-level images makes heif-convert write
-          // raw-1.png, raw-2.png … instead of the path it was given
-          const produced = (await readdir(scratch))
-            .filter((f) => /^raw-\d+\.png$/.test(f))
-            .sort();
-          if (produced.length === 0) {
-            throw new Error(`heif-convert produced no output for ${file.name}`);
-          }
-          source = path.join(scratch, produced[0]);
-        }
-      }
+        file.mimeType === "image/heif";
 
-      await toJpeg(source, path.join(FULL_DIR, name), FULL_MAX);
-      await toJpeg(source, path.join(THUMB_DIR, name), THUMB_MAX);
+      console.log(`+ ${file.name} -> ${name}`);
+
+      try {
+        const raw = path.join(scratch, `raw${ext || ".bin"}`);
+        await download(token, file.id, raw);
+
+        // Browsers cannot render HEIC at all, so this conversion is
+        // mandatory, not an optimisation.
+        const source = isHeif ? await decodeHeif(raw, scratch, file.name) : raw;
+
+        await toJpeg(source, path.join(FULL_DIR, name), FULL_MAX);
+        await toJpeg(source, path.join(THUMB_DIR, name), THUMB_MAX);
+      } catch (error) {
+        // One unreadable photo must not take the whole sync down with it —
+        // otherwise a single odd file blocks every later one, forever.
+        console.log(`  ! skipped: ${error.message.split("\n")[0]}`);
+        skipped.push(file.name);
+        await rm(path.join(FULL_DIR, name), { force: true });
+        await rm(path.join(THUMB_DIR, name), { force: true });
+      }
 
       // empty the scratch dir rather than removing named files, so a stale
       // raw-1.png can't be picked up by the next photo's fallback glob
@@ -375,8 +408,16 @@ async function main() {
   if (previous !== serialised) await writeFile(MANIFEST, serialised);
 
   console.log(
-    `done: +${toAdd.length} -${toDelete.length}, ${manifest.length} in manifest`,
+    `done: +${toAdd.length - skipped.length} -${toDelete.length}, ` +
+      `${manifest.length} in manifest`,
   );
+
+  // Loud but non-fatal: these retry every run, so they shouldn't be silent.
+  if (skipped.length > 0) {
+    console.log(`\n${skipped.length} file(s) could not be decoded:`);
+    for (const name of skipped) console.log(`  - ${name}`);
+    console.log("re-save them as JPEG in Drive and they'll sync next run.");
+  }
 }
 
 // only run when invoked directly, so scripts/gdrive-check.mjs can import the
