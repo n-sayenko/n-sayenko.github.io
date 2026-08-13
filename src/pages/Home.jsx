@@ -33,8 +33,7 @@ export default function Home() {
               >
                 NYT Cooking
               </Link>{" "}
-              as a senior software engineer. I read a lot, paint, write when I
-              can, and I'm currently learning to handstand.
+              as a senior software engineer. I read a lot, paint, and I'm currently learning to handstand.
             </Text>
 
             <Text as="p" size="3" align="center" color="gray" highContrast>
