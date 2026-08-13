@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  Container,
+  Box,
   Dialog,
   Flex,
   Heading,
@@ -12,7 +12,7 @@ import Nav from "../components/Nav";
 
 const GAP = 12; // px between tiles, both axes
 const ROW_UNIT = 4; // px height of one implicit grid row
-const MIN_COL = 240; // px target minimum column width
+const MIN_COL = 280; // px target minimum column width
 const MIN_COL_SMALL = 150;
 
 const formatDate = (iso) => {
@@ -142,14 +142,25 @@ export default function Art() {
 
   const active = openIndex === null ? null : items[openIndex];
 
+  // The wrapper is deliberately wider than Radix's Container sizes — the grid
+  // wants the screen, and the intro text is capped separately so it stays
+  // readable at that width.
   return (
-    <Container size="4" px="4" py="6">
+    <Box px="4" py="6" style={{ maxWidth: 1600, margin: "0 auto" }}>
       <Nav current="art" />
 
       <Heading as="h1" size="4" weight="regular" mb="5">
         art
       </Heading>
-      <Text as="p" size="3" align="center" color="gray" highContrast mb="6">
+      <Text
+        as="p"
+        size="3"
+        align="center"
+        color="gray"
+        highContrast
+        mb="6"
+        style={{ maxWidth: "68ch", marginInline: "auto" }}
+      >
        I paint and draw. Lately, I've been playing around with alternative process photography as well. This page is a repository of random unfinished projects.
       </Text>
 
@@ -297,6 +308,6 @@ export default function Art() {
           )}
         </Dialog.Content>
       </Dialog.Root>
-    </Container>
+    </Box>
   );
 }

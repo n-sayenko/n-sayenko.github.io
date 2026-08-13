@@ -26,9 +26,17 @@ export default function Home() {
             style={{ maxWidth: "34em" }}
           >
             <Text as="p" size="3" align="center" color="gray" highContrast>
-              Hi, I'm Nataliya. I currently work at NYT Cooking as a senior
-              software engineer. I read a lot, paint, write when I can, and I'm
-              currently learning to handstand.
+              Hi, I'm Nataliya. I currently work at{" "}
+              <Link
+                href="https://cooking.nytimes.com/"
+                target="_blank"
+                rel="noreferrer"
+                color="blue"
+              >
+                NYT Cooking
+              </Link>{" "}
+              as a senior software engineer. I read a lot, paint, write when I
+              can, and I'm currently learning to handstand.
             </Text>
 
             <Text as="p" size="3" align="center" color="gray" highContrast>
