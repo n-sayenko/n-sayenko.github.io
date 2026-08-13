@@ -312,18 +312,36 @@ async function main() {
       // Browsers cannot render HEIC at all, so this conversion is mandatory,
       // not an optimisation.
       let source = raw;
-      if (NEEDS_HEIF.has(ext) || file.mimeType === "image/heic" || file.mimeType === "image/heif") {
+      if (
+        NEEDS_HEIF.has(ext) ||
+        file.mimeType === "image/heic" ||
+        file.mimeType === "image/heif"
+      ) {
         source = path.join(scratch, "raw.png");
         await execFileAsync("heif-convert", [raw, source], {
           maxBuffer: 64 * 1024 * 1024,
         });
+        if (!existsSync(source)) {
+          // a HEIC holding several top-level images makes heif-convert write
+          // raw-1.png, raw-2.png … instead of the path it was given
+          const produced = (await readdir(scratch))
+            .filter((f) => /^raw-\d+\.png$/.test(f))
+            .sort();
+          if (produced.length === 0) {
+            throw new Error(`heif-convert produced no output for ${file.name}`);
+          }
+          source = path.join(scratch, produced[0]);
+        }
       }
 
       await toJpeg(source, path.join(FULL_DIR, name), FULL_MAX);
       await toJpeg(source, path.join(THUMB_DIR, name), THUMB_MAX);
 
-      await rm(raw, { force: true });
-      if (source !== raw) await rm(source, { force: true });
+      // empty the scratch dir rather than removing named files, so a stale
+      // raw-1.png can't be picked up by the next photo's fallback glob
+      for (const leftover of await readdir(scratch)) {
+        await rm(path.join(scratch, leftover), { force: true });
+      }
     }
   } finally {
     await rm(scratch, { recursive: true, force: true });

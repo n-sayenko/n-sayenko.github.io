@@ -23,10 +23,18 @@ jobs:
 
       - name: Install image tools
         # heif-convert handles HEIC straight off an iPhone, which browsers
-        # cannot display at all
+        # cannot display at all. The decoder plugins are separate packages on
+        # Ubuntu and are only Recommends of libheif, so they must be named
+        # explicitly — without libde265 every iPhone photo fails with
+        # "Unsupported codec".
         run: |
           sudo apt-get update -qq
-          sudo apt-get install -y --no-install-recommends imagemagick libheif-examples
+          sudo apt-get install -y \
+            imagemagick \
+            libheif-examples \
+            libheif-plugin-libde265 \
+            libheif-plugin-aomdec
+          heif-convert --version || true
 
       - uses: actions/setup-node@v4
         with:
