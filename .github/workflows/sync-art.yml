@@ -1,0 +1,64 @@
+name: Sync art from Drive
+
+on:
+  schedule:
+    # hourly at :17 — GitHub's cron is best effort and can run late
+    - cron: "17 * * * *"
+  workflow_dispatch:
+    inputs:
+      allow_bulk_delete:
+        description: "Allow removing more than half the gallery (use when you really did clear the Drive folder)"
+        type: boolean
+        default: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    outputs:
+      changed: ${{ steps.commit.outputs.changed }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install image tools
+        # heif-convert handles HEIC straight off an iPhone, which browsers
+        # cannot display at all
+        run: |
+          sudo apt-get update -qq
+          sudo apt-get install -y --no-install-recommends imagemagick libheif-examples
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+
+      - name: Sync
+        env:
+          GDRIVE_SERVICE_ACCOUNT_JSON: ${{ secrets.GDRIVE_SERVICE_ACCOUNT_JSON }}
+          GDRIVE_FOLDER_ID: ${{ secrets.GDRIVE_FOLDER_ID }}
+          ALLOW_BULK_DELETE: ${{ inputs.allow_bulk_delete && '1' || '0' }}
+        run: node scripts/sync-art.mjs
+
+      - name: Commit
+        id: commit
+        run: |
+          if [ -z "$(git status --porcelain public/gallery)" ]; then
+            echo "nothing changed"
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add public/gallery
+          git commit -m "art: sync from drive"
+          git push
+          echo "changed=true" >> "$GITHUB_OUTPUT"
+
+  deploy:
+    needs: sync
+    if: needs.sync.outputs.changed == 'true'
+    uses: ./.github/workflows/deploy.yml
+    permissions:
+      contents: read
+      pages: write
+      id-token: write
