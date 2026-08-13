@@ -1,23 +1,4 @@
 #!/usr/bin/env node
-/**
- * Mirrors a Google Drive folder into public/gallery/.
- *
- * For each image in the folder it writes a web-sized JPEG, a thumbnail, and
- * an entry in manifest.json. The description comes from the filename — rename
- * the file on your phone and that's the caption. Anything in captions.json
- * overrides it at render time; this script never touches that file.
- *
- * Idempotent: re-running with nothing changed in Drive writes nothing.
- *
- * Auth is a Google Cloud *service account* — a JWT signed with its private
- * key, exchanged for an access token. No OAuth consent dance, and nothing
- * that silently expires (an OAuth refresh token on an unpublished app dies
- * after 7 days; a service account key does not).
- *
- * Env: GDRIVE_SERVICE_ACCOUNT_JSON  the full service-account key JSON
- *      GDRIVE_FOLDER_ID             the folder's Drive ID
- *      ALLOW_BULK_DELETE=1          bypass the mass-deletion guard
- */
 
 import { execFile } from "node:child_process";
 import { createSign } from "node:crypto";
@@ -48,37 +29,25 @@ const QUALITY = 85;
 
 const NEEDS_HEIF = new Set([".heic", ".heif"]);
 
-// Filenames straight off a camera roll carry no meaning; better to show no
-// caption than "IMG_4821".
 const CAMERA_NOISE = [
   /^(img|image|photo|pxl|dsc|dscn|dji|screenshot|untitled)[-_ ]?[0-9-_ ()]*$/i,
-  // bare UUIDs, which iOS uses when a photo is shared out of some apps
   /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
-  // anything with no letters at all, e.g. "2026-05-21 11.21.17"
   /^[^a-z]*$/i,
 ];
 
 const { GDRIVE_SERVICE_ACCOUNT_JSON } = process.env;
 
-/**
- * Accepts either a bare folder id or a pasted Drive URL such as
- * https://drive.google.com/drive/u/0/folders/<id> — copying the URL out of the
- * browser is the obvious thing to do, so don't make it an error.
- */
 function normaliseFolderId(raw) {
   if (!raw) return raw;
   const value = raw.trim();
   const match = value.match(/\/folders\/([^/?#]+)/);
   if (match) return match[1];
-  // also tolerate ...?id=<id> and open?id=<id> forms
   const query = value.match(/[?&]id=([^&#]+)/);
   if (query) return query[1];
   return value;
 }
 
 const GDRIVE_FOLDER_ID = normaliseFolderId(process.env.GDRIVE_FOLDER_ID);
-
-// ----------------------------------------------------------------- google
 
 const base64url = (input) =>
   Buffer.from(input).toString("base64url");
@@ -103,7 +72,6 @@ export async function getAccessToken() {
   const claims = base64url(
     JSON.stringify({
       iss: key.client_email,
-      // read-only: the sync can never modify or delete anything in Drive
       scope: "https://www.googleapis.com/auth/drive.readonly",
       aud: "https://oauth2.googleapis.com/token",
       iat: now,
@@ -157,8 +125,6 @@ export async function listFolder(token) {
 
     const page = await res.json();
     files.push(...(page.files ?? []));
-    // Pagination must be exhaustive: a silently truncated listing would look
-    // like the user deleted everything past the first page.
     pageToken = page.nextPageToken;
   } while (pageToken);
 
@@ -178,13 +144,10 @@ async function download(token, fileId, destination) {
   await writeFile(destination, Buffer.from(await res.arrayBuffer()));
 }
 
-// ---------------------------------------------------------------- imaging
-
 let magickCmd = null;
 
 async function resolveMagick() {
   if (magickCmd) return magickCmd;
-  // ImageMagick 7 is `magick`; 6 is `convert`.
   try {
     await execFileAsync("magick", ["-version"]);
     magickCmd = "magick";
@@ -214,14 +177,6 @@ async function toJpeg(source, destination, maxEdge) {
   );
 }
 
-/**
- * Decode a HEIC to something ImageMagick will definitely resize.
- *
- * Two decoders, because they fail on different files: heif-convert handles
- * most iPhone photos, but chokes on portrait-mode shots whose depth-map item
- * is referenced but absent ("Non-existing depth image referenced"). ImageMagick
- * reads only the primary image, so it sails past exactly those.
- */
 async function decodeHeif(raw, scratch, label) {
   const png = path.join(scratch, "raw.png");
 
@@ -231,8 +186,6 @@ async function decodeHeif(raw, scratch, label) {
     });
     if (existsSync(png)) return png;
 
-    // a HEIC holding several top-level images makes heif-convert write
-    // raw-1.png, raw-2.png … instead of the path it was given
     const produced = (await readdir(scratch))
       .filter((f) => /^raw-\d+\.png$/.test(f))
       .sort();
@@ -264,8 +217,6 @@ async function dimensions(file) {
   return { w, h };
 }
 
-// ---------------------------------------------------------------- helpers
-
 const slugify = (s) =>
   s
     .normalize("NFKD")
@@ -281,23 +232,16 @@ function describe(name) {
   return base.replace(/_+/g, " ").replace(/\s+/g, " ").trim();
 }
 
-/**
- * Short hash of the file's contents. Survives renaming in Drive, which the
- * filename does not — so it's what captions.json can safely be keyed on.
- */
 const contentHash = (file) =>
   (file.md5Checksum ?? file.id).replace(/[^a-z0-9]/gi, "").slice(0, 8);
 
-/** Stable repo filename: readable slug + a hash so same-named files coexist. */
 function targetName(file) {
   return `${slugify(file.name.replace(/\.[^.]+$/, ""))}-${contentHash(file)}.jpg`;
 }
 
-/** When the photo was taken beats when it was uploaded, for a feed. */
 function takenAt(file) {
   const exif = file.imageMediaMetadata?.time;
   if (exif) {
-    // Drive returns EXIF as "YYYY:MM:DD HH:MM:SS"
     const iso = exif.replace(
       /^(\d{4}):(\d{2}):(\d{2})[ T]/,
       "$1-$2-$3T",
@@ -313,8 +257,6 @@ async function listExisting(dir) {
   return (await readdir(dir)).filter((f) => f.endsWith(".jpg"));
 }
 
-// ------------------------------------------------------------------- main
-
 async function main() {
   await mkdir(FULL_DIR, { recursive: true });
   await mkdir(THUMB_DIR, { recursive: true });
@@ -325,8 +267,6 @@ async function main() {
 
   console.log(`drive: ${files.length} image(s); repo: ${existing.length}`);
 
-  // An auth or API hiccup that returns an empty listing must never be read as
-  // "the user deleted everything".
   if (files.length === 0 && existing.length > 0) {
     throw new Error(
       `Refusing to continue: Drive returned 0 images but ${existing.length} ` +
@@ -335,13 +275,12 @@ async function main() {
     );
   }
 
-  const wanted = new Map(); // target filename -> drive file
+  const wanted = new Map();
   for (const file of files) wanted.set(targetName(file), file);
 
   const toAdd = [...wanted.keys()].filter((f) => !existing.includes(f));
   const toDelete = existing.filter((f) => !wanted.has(f));
 
-  // Same reasoning as above, for partial failures rather than total ones.
   if (
     toDelete.length > 5 &&
     toDelete.length > existing.length / 2 &&
@@ -373,23 +312,17 @@ async function main() {
         const raw = path.join(scratch, `raw${ext || ".bin"}`);
         await download(token, file.id, raw);
 
-        // Browsers cannot render HEIC at all, so this conversion is
-        // mandatory, not an optimisation.
         const source = isHeif ? await decodeHeif(raw, scratch, file.name) : raw;
 
         await toJpeg(source, path.join(FULL_DIR, name), FULL_MAX);
         await toJpeg(source, path.join(THUMB_DIR, name), THUMB_MAX);
       } catch (error) {
-        // One unreadable photo must not take the whole sync down with it —
-        // otherwise a single odd file blocks every later one, forever.
         console.log(`  ! skipped: ${error.message.split("\n")[0]}`);
         skipped.push(file.name);
         await rm(path.join(FULL_DIR, name), { force: true });
         await rm(path.join(THUMB_DIR, name), { force: true });
       }
 
-      // empty the scratch dir rather than removing named files, so a stale
-      // raw-1.png can't be picked up by the next photo's fallback glob
       for (const leftover of await readdir(scratch)) {
         await rm(path.join(scratch, leftover), { force: true });
       }
@@ -404,7 +337,6 @@ async function main() {
     await rm(path.join(THUMB_DIR, name), { force: true });
   }
 
-  // Rebuilt from scratch each run so it can never drift from what's on disk.
   const manifest = [];
   for (const [name, file] of wanted) {
     const target = path.join(FULL_DIR, name);
@@ -431,16 +363,12 @@ async function main() {
       `${manifest.length} in manifest`,
   );
 
-  // Loud but non-fatal: these retry every run, so they shouldn't be silent.
   if (skipped.length > 0) {
     console.log(`\n${skipped.length} file(s) could not be decoded:`);
     for (const name of skipped) console.log(`  - ${name}`);
     console.log("re-save them as JPEG in Drive and they'll sync next run.");
   }
 
-  // Also surface it on the run's summary page — Actions logs are virtualised
-  // and awkward to read, and a skipped photo is exactly the thing you want to
-  // notice without going digging.
   if (process.env.GITHUB_STEP_SUMMARY) {
     const lines = [
       "### Art sync",
@@ -462,8 +390,6 @@ async function main() {
   }
 }
 
-// only run when invoked directly, so scripts/gdrive-check.mjs can import the
-// auth + listing helpers without triggering a sync
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error) => {
     console.error(error.message);

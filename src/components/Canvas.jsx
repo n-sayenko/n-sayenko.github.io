@@ -1,11 +1,5 @@
 import { useEffect, useRef } from "react";
 
-// The dithering + particle-repulsion portrait, ported from the original
-// script.js. The algorithm (1-bit threshold with Floyd–Steinberg style error
-// diffusion, then particles pushed away from the cursor) is unchanged; the
-// module-level globals it used to rely on are now scoped to the effect so a
-// remount can't leave a stray animation loop running.
-
 const W = 220;
 const H = 220;
 const STRENGTH = 450;
@@ -63,8 +57,6 @@ export default function Canvas({ src = "/nataliya.jpg" }) {
     };
 
     const onTouchMove = (e) => {
-      // recomputed per event — the page scrolls now, so a bounds rect
-      // captured once at load would drift out of alignment.
       const bounds = c.getBoundingClientRect();
       const t = e.targetTouches[0];
       mx = mapRange(t.clientX - bounds.left, 0, c.offsetWidth, 0, W);

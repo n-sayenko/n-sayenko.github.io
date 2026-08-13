@@ -5,8 +5,6 @@ import Nav from "../components/Nav";
 export default function Home() {
   return (
     <Container size="2" px="4">
-      {/* nav pinned to the top, portrait + bio centered in whatever height is
-          left over — so the fold still frames the portrait */}
       <Flex direction="column" className="page-column">
         <Nav current="home" />
 

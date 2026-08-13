@@ -2,7 +2,6 @@ name: Sync art from Drive
 
 on:
   schedule:
-    # hourly at :17 — GitHub's cron is best effort and can run late
     - cron: "17 * * * *"
   workflow_dispatch:
     inputs:
@@ -22,11 +21,6 @@ jobs:
       - uses: actions/checkout@v4
 
       - name: Install image tools
-        # heif-convert handles HEIC straight off an iPhone, which browsers
-        # cannot display at all. The decoder plugins are separate packages on
-        # Ubuntu and are only Recommends of libheif, so they must be named
-        # explicitly — without libde265 every iPhone photo fails with
-        # "Unsupported codec".
         run: |
           sudo apt-get update -qq
           sudo apt-get install -y \

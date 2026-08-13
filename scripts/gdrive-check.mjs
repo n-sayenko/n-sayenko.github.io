@@ -1,13 +1,4 @@
 #!/usr/bin/env node
-/**
- * One-time setup check. Confirms the service account can actually see your
- * Drive folder, and shows how each filename will be read as a caption —
- * before you trust the hourly sync with it.
- *
- *   GDRIVE_FOLDER_ID=... \
- *   GDRIVE_SERVICE_ACCOUNT_JSON="$(cat key.json)" \
- *   node scripts/gdrive-check.mjs
- */
 
 import { getAccessToken, listFolder } from "./sync-art.mjs";
 

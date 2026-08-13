@@ -10,9 +10,9 @@ import {
 } from "@radix-ui/themes";
 import Nav from "../components/Nav";
 
-const GAP = 12; // px between tiles, both axes
-const ROW_UNIT = 4; // px height of one implicit grid row
-const MIN_COL = 280; // px target minimum column width
+const GAP = 12;
+const ROW_UNIT = 4;
+const MIN_COL = 280;
 const MIN_COL_SMALL = 150;
 
 const formatDate = (iso) => {
@@ -39,19 +39,15 @@ async function loadJson(url, fallback) {
 }
 
 export default function Art() {
-  const [items, setItems] = useState(null); // null = still loading
+  const [items, setItems] = useState(null);
   const [openIndex, setOpenIndex] = useState(null);
 
   const gridRef = useRef(null);
   const itemRefs = useRef(new Map());
-  // the tile that opened the lightbox, so focus can go back to it on close
   const openerRef = useRef(null);
   const [cols, setCols] = useState(1);
   const [spans, setSpans] = useState({});
 
-  // captions.json is hand-edited and optional; manifest.json doesn't exist
-  // until the first Drive sync runs. Both missing is a normal empty state,
-  // not an error.
   useEffect(() => {
     let cancelled = false;
     Promise.all([
@@ -61,12 +57,6 @@ export default function Art() {
       if (cancelled) return;
       const list = (Array.isArray(manifest) ? manifest : []).map((entry) => ({
         ...entry,
-        // A hand-written caption always wins over the filename-derived one.
-        // Keyed by filename or by the content id, which survives a rename
-        // in Drive where the filename doesn't.
-        // `||` not `??` on purpose: captions.json ships pre-filled with empty
-        // strings, and a blank entry should mean "not written yet" rather than
-        // blanking out the filename-derived one.
         description:
           captions[entry.file] || captions[entry.id] || entry.description || "",
       }));
@@ -77,8 +67,6 @@ export default function Art() {
     };
   }, []);
 
-  // Column count is computed rather than left to auto-fill because the row
-  // spans below need to know the actual column width.
   useLayoutEffect(() => {
     const el = gridRef.current;
     if (!el) return;
@@ -96,8 +84,6 @@ export default function Art() {
     return () => ro.disconnect();
   }, [items]);
 
-  // Each tile spans however many thin rows its real rendered height needs —
-  // measured, so a long caption is accounted for as well as the image.
   useLayoutEffect(() => {
     if (!items || items.length === 0) return;
 
@@ -142,9 +128,6 @@ export default function Art() {
 
   const active = openIndex === null ? null : items[openIndex];
 
-  // The wrapper is deliberately wider than Radix's Container sizes — the grid
-  // wants the screen, and the intro text is capped separately so it stays
-  // readable at that width.
   return (
     <Box px="4" py="6" style={{ maxWidth: 1600, margin: "0 auto" }}>
       <Nav current="art" />
@@ -202,15 +185,11 @@ export default function Art() {
               <figure>
                 <img
                   src={`/gallery/thumb/${item.file}`}
-                  // when a visible caption follows, alt would make a screen
-                  // reader announce the same text twice
                   alt={item.description ? "" : "untitled"}
                   loading="lazy"
                   decoding="async"
                   width={item.w}
                   height={item.h}
-                  // reserve the right box before the image loads, so the
-                  // measured span is correct on first paint
                   style={{ aspectRatio: `${item.w} / ${item.h}` }}
                 />
                 {item.description && (
@@ -231,20 +210,28 @@ export default function Art() {
         onOpenChange={(open) => {
           if (open) return;
           setOpenIndex(null);
-          // Radix aims its own focus restore at a Dialog.Trigger, and there
-          // isn't one here (the dialog is driven by index), so focus would be
-          // left on <body> and a keyboard user dumped back to the top of the
-          // page. Deferred so it lands after the dialog has released focus.
           setTimeout(() => openerRef.current?.focus(), 0);
         }}
       >
         <Dialog.Content
           maxWidth="1100px"
+          style={{ position: "relative" }}
           onKeyDown={(e) => {
             if (e.key === "ArrowLeft") goPrev();
             if (e.key === "ArrowRight") goNext();
           }}
         >
+          <Dialog.Close>
+            <IconButton
+              className="lightbox-close"
+              variant="soft"
+              color="gray"
+              aria-label="Close"
+            >
+              ×
+            </IconButton>
+          </Dialog.Close>
+
           <VisuallyHidden>
             <Dialog.Title>
               {active?.description || "artwork"}
@@ -280,9 +267,6 @@ export default function Art() {
                     </Text>
                   )}
                   {active.description && (
-                    // no asChild: Themes' Dialog.Description forces asChild
-                    // false after spreading props, so a nested <Text> would be
-                    // dropped. Its own props reach the Text it renders.
                     <Dialog.Description
                       size="2"
                       align="center"

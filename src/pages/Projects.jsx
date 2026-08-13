@@ -1,9 +1,6 @@
 import { Badge, Container, Flex, Heading, Link, Text } from "@radix-ui/themes";
 import Nav from "../components/Nav";
 
-// Hand-authored — three projects doesn't justify a data file. Add an entry by
-// copying one of these objects. `href` is optional; omit it for anything not
-// live yet and no link renders.
 const PROJECTS = [
   {
     title: "ripe fruit",

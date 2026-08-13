@@ -28,8 +28,6 @@ export default function Nav({ current }) {
               size="2"
               color="blue"
               weight="bold"
-              /* the current page is the one dark, boxed link; the rest stay
-                 plain blue so "where am I" reads at a glance */
               highContrast={isCurrent}
               underline="none"
               className={isCurrent ? "nav-link nav-link-current" : "nav-link"}
