@@ -7,7 +7,7 @@ export default function Home() {
     <Container size="2" px="4">
       {/* nav pinned to the top, portrait + bio centered in whatever height is
           left over — so the fold still frames the portrait */}
-      <Flex direction="column" style={{ minHeight: "100vh" }}>
+      <Flex direction="column" className="page-column">
         <Nav current="home" />
 
         <Flex

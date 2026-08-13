@@ -20,6 +20,17 @@ body {
   margin: 0;
 }
 
+/* ---------- page column ---------- */
+
+/* On iOS Safari 100vh is the *large* viewport — it includes the space behind
+   the collapsible toolbars — so a 100vh column runs taller than what's on
+   screen and centering inside it drops the portrait well below the nav. svh
+   is the visible height; the vh line stays as the fallback. */
+.page-column {
+  min-height: 100vh;
+  min-height: 100svh;
+}
+
 /* ---------- nav ---------- */
 
 .nav-link {
