@@ -3,7 +3,6 @@ import {
   Box,
   Dialog,
   Flex,
-  Heading,
   IconButton,
   Text,
   VisuallyHidden,
@@ -132,9 +131,6 @@ export default function Art() {
     <Box px="4" py="6" style={{ maxWidth: 1600, margin: "0 auto" }}>
       <Nav current="art" />
 
-      <Heading as="h1" size="4" weight="regular" mb="5">
-        art
-      </Heading>
       <Text
         as="p"
         size="3"

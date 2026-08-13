@@ -21,10 +21,6 @@ export default function Projects() {
     <Container size="2" px="4" py="6">
       <Nav current="projects" />
 
-      <Heading as="h1" size="4" weight="regular" mb="5">
-        projects
-      </Heading>
-
       <Flex asChild direction="column" gap="6">
         <ul style={{ listStyle: "none", padding: 0, margin: 0 }}>
           {PROJECTS.map((p) => (
