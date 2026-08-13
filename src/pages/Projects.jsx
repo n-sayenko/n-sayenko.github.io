@@ -35,7 +35,12 @@ export default function Projects() {
               <Flex align="center" gap="2" mb="1">
                 <Heading as="h2" size="3" weight="regular">
                   {p.href ? (
-                    <Link href={p.href} target="_blank" rel="noreferrer" highContrast>
+                    <Link
+                      href={p.href}
+                      target="_blank"
+                      rel="noreferrer"
+                      color="blue"
+                    >
                       {p.title}
                     </Link>
                   ) : (

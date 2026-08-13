@@ -149,7 +149,7 @@ export default function Art() {
       <Heading as="h1" size="4" weight="regular" mb="5">
         art
       </Heading>
-      <Text as="p" size="3" align="center" color="gray" highContrast>
+      <Text as="p" size="3" align="center" color="gray" highContrast mb="6">
        I paint and draw. Lately, I've been playing around with alternative process photography as well. This page is a repository of random unfinished projects.
       </Text>
 
