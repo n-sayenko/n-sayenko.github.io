@@ -43,8 +43,13 @@ const NEEDS_HEIF = new Set([".heic", ".heif"]);
 
 // Filenames straight off a camera roll carry no meaning; better to show no
 // caption than "IMG_4821".
-const CAMERA_NOISE =
-  /^(img|image|photo|pxl|dsc|dscn|dji|screenshot|untitled)[-_ ]?[0-9-_ ()]*$/i;
+const CAMERA_NOISE = [
+  /^(img|image|photo|pxl|dsc|dscn|dji|screenshot|untitled)[-_ ]?[0-9-_ ()]*$/i,
+  // bare UUIDs, which iOS uses when a photo is shared out of some apps
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i,
+  // anything with no letters at all, e.g. "2026-05-21 11.21.17"
+  /^[^a-z]*$/i,
+];
 
 const { GDRIVE_SERVICE_ACCOUNT_JSON } = process.env;
 
@@ -265,7 +270,7 @@ const slugify = (s) =>
 
 function describe(name) {
   const base = name.replace(/\.[^.]+$/, "").trim();
-  if (!base || CAMERA_NOISE.test(base)) return "";
+  if (!base || CAMERA_NOISE.some((pattern) => pattern.test(base))) return "";
   return base.replace(/_+/g, " ").replace(/\s+/g, " ").trim();
 }
 
