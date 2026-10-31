@@ -29,7 +29,7 @@ function distributeError(imageData, x, y, errR, errG, errB) {
   addError(imageData, 1 / 16, x + 1, y + 1, errR, errG, errB);
 }
 
-export default function Canvas({ src = "/nataliya.jpg" }) {
+export default function Canvas({ src = "/nat2.jpg" }) {
   const canvasRef = useRef(null);
 
   useEffect(() => {
