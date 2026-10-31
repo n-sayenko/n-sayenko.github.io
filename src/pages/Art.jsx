@@ -140,7 +140,7 @@ export default function Art() {
         mb="6"
         style={{ maxWidth: "68ch", marginInline: "auto" }}
       >
-       I paint and draw. Lately, I've been playing around with alternative process photography as well. This page is a repository of random unfinished projects.
+        Paintings, drawings, cyanotypes, etc. mostly unfinished
       </Text>
 
 
