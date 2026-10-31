@@ -8,12 +8,7 @@ const PROJECTS = [
       "A foraging map of fruit trees in Seattle",
     href: "https://www.ripefruit.app/",
   },
-  {
-    title: "museum store",
-    blurb:
-      "coming soon",
-    href: null,
-  },
+
 ];
 
 export default function Projects() {
